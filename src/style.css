@@ -2,7 +2,7 @@
    G2 EPUB Reader — Vintage Modern Design
    ======================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+/* System fonts only — no external network requests needed */
 
 /* --- Theme Tokens --- */
 :root,
@@ -82,7 +82,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg-primary);
   color: var(--text-primary);
   min-height: 100dvh;
@@ -110,11 +110,11 @@ body::before {
 
 /* --- Typography --- */
 .font-serif {
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: Georgia, 'Times New Roman', serif;
 }
 
 .font-sans {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* --- Landing Page --- */
@@ -133,7 +133,7 @@ body::before {
 }
 
 .landing-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
@@ -193,7 +193,7 @@ body::before {
 }
 
 .drop-zone-text {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 18px;
   color: var(--text-primary);
   margin-bottom: 8px;
@@ -249,7 +249,7 @@ body::before {
 }
 
 .book-cover-initial {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 48px;
   font-weight: 700;
   color: var(--accent);
@@ -264,7 +264,7 @@ body::before {
 }
 
 .book-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
@@ -392,7 +392,7 @@ body::before {
 }
 
 .reader-book-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
@@ -407,7 +407,7 @@ body::before {
 .reader-content {
   flex: 1;
   padding: 32px 24px;
-  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 18px;
   line-height: 1.75;
   color: var(--text-primary);
@@ -432,7 +432,7 @@ body::before {
   text-align: center;
   padding: 32px 0;
   color: var(--text-muted);
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-style: italic;
   font-size: 14px;
 }
@@ -537,7 +537,7 @@ body::before {
 }
 
 .chapter-panel-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
@@ -624,7 +624,7 @@ body::before {
 }
 
 .settings-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 22px;
   font-weight: 600;
   color: var(--text-primary);
@@ -673,11 +673,11 @@ body::before {
 
 .settings-font-btn span {
   display: block;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
 }
 
 .settings-font-btn .size-label {
-  font-family: 'Inter', sans-serif;
+  font-family: system-ui, sans-serif;
   font-size: 11px;
   color: var(--text-muted);
   margin-top: 4px;
@@ -779,7 +779,7 @@ body::before {
 }
 
 .loading-text {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 16px;
   color: var(--bg-card);
 }
@@ -820,7 +820,7 @@ body::before {
 /* --- Decorative --- */
 .ornament {
   color: var(--accent);
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 20px;
   text-align: center;
   opacity: 0.5;
@@ -893,7 +893,7 @@ body::before {
 }
 
 .resume-dialog-title {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
@@ -958,7 +958,7 @@ body::before {
 .book-cover-gradient-4 { background: linear-gradient(145deg, #5B2C3F 0%, #7A3E5A 50%, #9B5F7B 100%); }
 
 .book-cover-initial {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: Georgia, 'Times New Roman', serif;
   font-size: 48px;
   font-weight: 700;
   color: rgba(255, 255, 255, 0.85);
