@@ -4,7 +4,8 @@ import { Router } from "./ui/router";
 import { landingView } from "./ui/landing";
 import { readerView } from "./ui/reader";
 import { settingsView } from "./ui/settings";
-import { getSettings } from "./store/reading-state";
+import { welcomeView } from "./ui/welcome";
+import { getSettings, hasCompletedSetup } from "./store/reading-state";
 import { initGlassesDisplay } from "./glasses/display";
 import { setBridge } from "./store/bridge-sync";
 import { restoreLibraryFromBridge } from "./store/library";
@@ -20,10 +21,17 @@ async function init() {
   // Set up router
   const appEl = document.getElementById("app")!;
   router = new Router(appEl, bus);
+  router.register("welcome", welcomeView);
   router.register("landing", landingView);
   router.register("reader", readerView);
   router.register("settings", settingsView);
-  router.navigate("landing");
+
+  // Show welcome theme picker on first launch, otherwise go to library
+  if (hasCompletedSetup()) {
+    router.navigate("landing");
+  } else {
+    router.navigate("welcome");
+  }
 
   // Connect to G2 glasses (non-blocking)
   connectBridge(bus);

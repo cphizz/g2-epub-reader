@@ -33,4 +33,4 @@ export interface AppSettings {
   theme: "cream" | "sepia" | "dark";
 }
 
-export type AppView = "landing" | "reader" | "settings";
+export type AppView = "welcome" | "landing" | "reader" | "settings";

@@ -83,6 +83,14 @@ export function saveSettings(settings: AppSettings) {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
 
+export function hasCompletedSetup(): boolean {
+  return localStorage.getItem("epub_setup_done") === "1";
+}
+
+export function markSetupDone() {
+  localStorage.setItem("epub_setup_done", "1");
+}
+
 export function removePosition(bookId: string) {
   const positions = getPositions();
   delete positions[bookId];
