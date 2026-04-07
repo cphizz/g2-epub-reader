@@ -858,6 +858,92 @@ body::before {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+/* --- Resume Reading Dialog --- */
+.resume-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.resume-dialog {
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 320px;
+  max-width: 88vw;
+  box-shadow: 0 16px 48px var(--shadow-hover);
+  text-align: center;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.resume-dialog-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.resume-dialog-info {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.resume-dialog-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resume-btn {
+  width: 100%;
+  padding: 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.resume-btn-continue {
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+.resume-btn-continue:hover {
+  background: var(--accent-hover);
+}
+
+.resume-btn-start {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.resume-btn-start:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* --- Reader Page Turn Animation --- */
 .reader-content.page-turning {
   opacity: 0.3;
@@ -932,11 +1018,8 @@ body::before {
 
 /* --- Bookmark Button --- */
 .bookmark-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -947,7 +1030,7 @@ body::before {
   justify-content: center;
   font-size: 16px;
   transition: all 0.2s;
-  z-index: 10;
+  flex-shrink: 0;
 }
 
 .bookmark-btn:hover {

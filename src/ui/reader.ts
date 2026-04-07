@@ -1,7 +1,7 @@
 import type { ViewModule, AppContext } from "./router";
 import type { ParsedBook } from "../types";
 import { getBook } from "../store/library";
-import { getPosition, savePosition, getSettings, saveSettings } from "../store/reading-state";
+import { savePosition, getSettings, saveSettings, getPositionWithBridgeFallback } from "../store/reading-state";
 import { paginateForBrowser, getCharsPerPage } from "../epub/paginator";
 import { getBookmarks, addBookmark, removeBookmark, isBookmarked } from "../store/bookmarks";
 import { showToast } from "./toast";
@@ -332,6 +332,37 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
+function showResumeDialog(el: HTMLElement, chapterTitle: string, chapterNum: number, pageNum: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "resume-overlay";
+    overlay.innerHTML = `
+      <div class="resume-dialog">
+        <div class="resume-dialog-title">Welcome Back</div>
+        <div class="resume-dialog-info">
+          You were reading<br>
+          <strong>${escapeHtml(chapterTitle)}</strong><br>
+          Chapter ${chapterNum}, Page ${pageNum}
+        </div>
+        <div class="resume-dialog-buttons">
+          <button class="resume-btn resume-btn-continue" id="resume-continue">Continue Reading</button>
+          <button class="resume-btn resume-btn-start" id="resume-start">Start Over</button>
+        </div>
+      </div>
+    `;
+    el.appendChild(overlay);
+
+    overlay.querySelector("#resume-continue")?.addEventListener("click", () => {
+      overlay.remove();
+      resolve(true);
+    });
+    overlay.querySelector("#resume-start")?.addEventListener("click", () => {
+      overlay.remove();
+      resolve(false);
+    });
+  });
+}
+
 async function render(el: HTMLElement, ctx: AppContext, params?: Record<string, string>) {
   container = el;
   const bookId = params?.bookId;
@@ -347,11 +378,33 @@ async function render(el: HTMLElement, ctx: AppContext, params?: Record<string, 
     return;
   }
 
-  const pos = getPosition(bookId);
-  chapterIndex = Math.min(pos.chapterIndex, book.chapters.length - 1);
-  pages = getPages();
-  pageIndex = Math.min(pos.pageIndex, pages.length - 1);
+  const pos = await getPositionWithBridgeFallback(bookId);
+  const hasSavedProgress = pos.chapterIndex > 0 || pos.pageIndex > 0;
   searchQuery = "";
+
+  // If there's saved progress, ask user whether to continue or start over
+  if (hasSavedProgress) {
+    const chTitle = book.chapters[Math.min(pos.chapterIndex, book.chapters.length - 1)]?.title ?? `Chapter ${pos.chapterIndex + 1}`;
+    const shouldResume = await showResumeDialog(el, chTitle, pos.chapterIndex + 1, pos.pageIndex + 1);
+    if (shouldResume) {
+      chapterIndex = Math.min(pos.chapterIndex, book.chapters.length - 1);
+      pages = getPages();
+      pageIndex = Math.min(pos.pageIndex, pages.length - 1);
+    } else {
+      chapterIndex = 0;
+      pages = getPages();
+      pageIndex = 0;
+    }
+  } else {
+    chapterIndex = 0;
+    pages = getPages();
+    pageIndex = 0;
+  }
+
+  // Notify glasses that a book has been opened
+  ctx.bus.dispatchEvent(new CustomEvent("book-opened", {
+    detail: { chapters: book.chapters, chapterIndex }
+  }));
 
   const settings = getSettings();
 

@@ -1,4 +1,5 @@
 import type { AppSettings, ReadingPosition } from "../types";
+import { syncPositionToBridge, restorePositionFromBridge } from "./bridge-sync";
 
 const POSITIONS_KEY = "epub_positions";
 const SETTINGS_KEY = "epub_settings";
@@ -30,16 +31,36 @@ export function getPosition(bookId: string): ReadingPosition {
     chapterIndex: 0,
     pageIndex: 0,
     glassesPageIndex: 0,
-    lastReadAt: Date.now(),
+    lastReadAt: 0,
   };
+}
+
+export async function getPositionWithBridgeFallback(bookId: string): Promise<ReadingPosition> {
+  const local = getPosition(bookId);
+  // If we have a real position locally, use it
+  if (local.chapterIndex > 0 || local.pageIndex > 0) return local;
+
+  // Try bridge storage
+  const bridgePos = await restorePositionFromBridge(bookId);
+  if (bridgePos && (bridgePos.chapterIndex > 0 || bridgePos.pageIndex > 0)) {
+    // Save locally for future access
+    const positions = getPositions();
+    positions[bookId] = bridgePos;
+    savePositions(positions);
+    return bridgePos;
+  }
+
+  return local;
 }
 
 export function savePosition(pos: ReadingPosition) {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    const updated = { ...pos, lastReadAt: Date.now() };
     const positions = getPositions();
-    positions[pos.bookId] = { ...pos, lastReadAt: Date.now() };
+    positions[pos.bookId] = updated;
     savePositions(positions);
+    syncPositionToBridge(updated);
   }, 500);
 }
 

@@ -1,4 +1,4 @@
-import { type EvenAppBridge, TextContainerProperty, CreateStartUpPageContainer } from "@evenrealities/even_hub_sdk";
+import { type EvenAppBridge, TextContainerProperty, CreateStartUpPageContainer, RebuildPageContainer } from "@evenrealities/even_hub_sdk";
 import { GlassesReadingView } from "./reading-view";
 import { GlassesChapterListView } from "./chapter-list-view";
 
@@ -15,11 +15,15 @@ export function initGlassesDisplay(b: EvenAppBridge, eventBus: EventTarget) {
   readingView = new GlassesReadingView(bridge, bus);
   chapterListView = new GlassesChapterListView(bridge, bus);
 
+  console.log("Glasses display: initializing welcome screen");
+  showWelcomeScreen();
+
   // Listen for book opened
   bus.addEventListener("book-opened", ((e: CustomEvent) => {
+    console.log("Glasses display: book-opened event received");
     const { chapters, chapterIndex } = e.detail;
     readingView!.setBook(chapters, chapterIndex);
-    setupDisplay();
+    showReadingView();
   }) as EventListener);
 
   // Listen for chapter changes from browser
@@ -40,10 +44,41 @@ export function initGlassesDisplay(b: EvenAppBridge, eventBus: EventTarget) {
   });
 }
 
-async function setupDisplay() {
-  if (!bridge || initialized) return;
+async function showWelcomeScreen() {
+  if (!bridge) return;
   try {
     await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
+      containerTotalNum: 1,
+      textObject: [
+        new TextContainerProperty({
+          containerID: 1,
+          containerName: "welcome",
+          xPosition: 0,
+          yPosition: 0,
+          width: 576,
+          height: 288,
+          content: "G2 EPUB Reader\n\nOpen a book on your phone to start reading.",
+          borderWidth: 0,
+          borderColor: 0,
+          borderRadius: 0,
+          paddingLength: 8,
+          isEventCapture: 0,
+        }),
+      ],
+      listObject: [],
+      imageObject: [],
+    }));
+    initialized = true;
+    console.log("Glasses display: welcome screen shown");
+  } catch (err) {
+    console.error("Failed to create welcome screen:", err);
+  }
+}
+
+async function showReadingView() {
+  if (!bridge || !initialized) return;
+  try {
+    await bridge.rebuildPageContainer(new RebuildPageContainer({
       containerTotalNum: 2,
       textObject: [
         new TextContainerProperty({
@@ -78,10 +113,10 @@ async function setupDisplay() {
       listObject: [],
       imageObject: [],
     }));
-    initialized = true;
     currentMode = "reading";
+    console.log("Glasses display: reading view shown");
   } catch (err) {
-    console.error("Failed to create glasses display:", err);
+    console.error("Failed to show reading view:", err);
   }
 }
 
