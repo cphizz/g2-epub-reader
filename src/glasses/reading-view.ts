@@ -80,20 +80,22 @@ export class GlassesReadingView {
   }
 
   async updateGlasses() {
+    const text = this.getCurrentPageText().substring(0, 1900);
+    const status = this.getStatusText().substring(0, 200);
     try {
       await this.bridge.textContainerUpgrade(new TextContainerUpgrade({
         containerID: 1,
         containerName: "reading",
-        content: this.getCurrentPageText(),
+        content: text,
         contentOffset: 0,
-        contentLength: this.getCurrentPageText().length,
+        contentLength: text.length,
       }));
       await this.bridge.textContainerUpgrade(new TextContainerUpgrade({
         containerID: 2,
         containerName: "status",
-        content: this.getStatusText(),
+        content: status,
         contentOffset: 0,
-        contentLength: this.getStatusText().length,
+        contentLength: status.length,
       }));
     } catch (err) {
       console.error("Glasses update failed:", err);

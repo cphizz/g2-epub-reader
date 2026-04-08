@@ -2,7 +2,7 @@ export function paginateForBrowser(text: string, charsPerPage: number): string[]
   return paginate(text, charsPerPage);
 }
 
-export function paginateForGlasses(text: string, maxChars = 1200): string[] {
+export function paginateForGlasses(text: string, maxChars = 900): string[] {
   return paginate(text, maxChars);
 }
 

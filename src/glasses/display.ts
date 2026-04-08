@@ -1,4 +1,4 @@
-import { type EvenAppBridge, TextContainerProperty, CreateStartUpPageContainer, RebuildPageContainer } from "@evenrealities/even_hub_sdk";
+import { type EvenAppBridge, TextContainerProperty, TextContainerUpgrade, CreateStartUpPageContainer, RebuildPageContainer } from "@evenrealities/even_hub_sdk";
 import { GlassesReadingView } from "./reading-view";
 import { GlassesChapterListView } from "./chapter-list-view";
 import type { Chapter } from "../types";
@@ -6,48 +6,43 @@ import type { Chapter } from "../types";
 let bridge: EvenAppBridge | null = null;
 let bus: EventTarget | null = null;
 let initialized = false;
+let initInProgress = false;
 let readingView: GlassesReadingView | null = null;
 let chapterListView: GlassesChapterListView | null = null;
-let currentMode: "reading" | "chapter-list" = "reading";
+let currentMode: "welcome" | "reading" | "chapter-list" = "welcome";
 
 // Track pending book data in case book is opened before bridge connects
 let pendingBook: { chapters: Chapter[]; chapterIndex: number } | null = null;
 
 /**
  * Call this early (before bridge connects) to start listening for book-opened events.
- * Events that fire before the bridge is ready will be queued.
  */
 export function setupGlassesEventListeners(eventBus: EventTarget) {
   bus = eventBus;
 
   bus.addEventListener("book-opened", ((e: CustomEvent) => {
     const { chapters, chapterIndex } = e.detail;
-    console.log("Glasses: book-opened event received, bridge ready:", !!bridge);
+    console.log("Glasses: book-opened, bridge ready:", !!bridge, "initialized:", initialized);
 
-    if (bridge && initialized && readingView) {
-      // Bridge is ready, show immediately
+    if (bridge && initialized && readingView && !initInProgress) {
       readingView.setBook(chapters, chapterIndex);
-      showReadingView();
+      switchToReading();
     } else {
-      // Bridge not ready yet, save for later
       pendingBook = { chapters, chapterIndex };
-      console.log("Glasses: book queued, waiting for bridge...");
+      console.log("Glasses: book queued for when bridge is ready");
     }
   }) as EventListener);
 
   bus.addEventListener("chapter-changed", ((e: CustomEvent) => {
-    if (readingView) {
+    if (readingView && initialized && currentMode === "reading") {
       readingView.setChapter(e.detail.chapterIndex);
-      if (initialized && currentMode === "reading") {
-        readingView.updateGlasses();
-      }
+      updateReadingText();
     }
   }) as EventListener);
 }
 
 /**
- * Call this after bridge connects. Sets up the glasses display
- * and loads any book that was opened while waiting.
+ * Call after bridge connects. Shows welcome or loads queued book.
  */
 export async function initGlassesDisplay(b: EvenAppBridge, eventBus: EventTarget) {
   bridge = b;
@@ -59,36 +54,41 @@ export async function initGlassesDisplay(b: EvenAppBridge, eventBus: EventTarget
   bridge.onEvenHubEvent((event: any) => {
     if (currentMode === "reading") {
       readingView!.handleEvent(event);
-    } else {
+    } else if (currentMode === "chapter-list") {
       chapterListView!.handleEvent(event);
     }
   });
 
-  // Check if a book was already opened before bridge connected
+  // Create initial display
+  initInProgress = true;
+
   if (pendingBook) {
-    console.log("Glasses: loading queued book");
+    // Book was opened before bridge connected — show it directly
+    console.log("Glasses: loading queued book directly");
     readingView.setBook(pendingBook.chapters, pendingBook.chapterIndex);
     pendingBook = null;
-    await showReadingScreen();
+    await createInitialReadingPage();
   } else {
-    await showWelcomeScreen();
+    await createWelcomePage();
   }
+
+  initInProgress = false;
 }
 
-async function showWelcomeScreen() {
+async function createWelcomePage() {
   if (!bridge) return;
   try {
-    await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
+    const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
       containerTotalNum: 1,
       textObject: [
         new TextContainerProperty({
           containerID: 1,
-          containerName: "welcome",
+          containerName: "main",
           xPosition: 0,
           yPosition: 0,
           width: 576,
           height: 288,
-          content: "BookLens\n\nOpen a book on your phone to start reading.",
+          content: "BookLens\n\nOpen a book to start reading.",
           borderWidth: 0,
           borderColor: 0,
           borderRadius: 0,
@@ -99,68 +99,22 @@ async function showWelcomeScreen() {
       listObject: [],
       imageObject: [],
     }));
+    console.log("Glasses: welcome page created, result:", result);
     initialized = true;
-    console.log("Glasses: welcome screen shown");
+    currentMode = "welcome";
   } catch (err) {
-    console.error("Glasses: failed to create welcome screen:", err);
+    console.error("Glasses: createStartUpPageContainer failed:", err);
   }
 }
 
-async function showReadingScreen() {
-  if (!bridge) return;
-  try {
-    // If we haven't called createStartUpPageContainer yet, do that first
-    if (!initialized) {
-      await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
-        containerTotalNum: 2,
-        textObject: [
-          new TextContainerProperty({
-            containerID: 1,
-            containerName: "reading",
-            xPosition: 0,
-            yPosition: 0,
-            width: 576,
-            height: 264,
-            content: readingView!.getCurrentPageText(),
-            borderWidth: 0,
-            borderColor: 0,
-            borderRadius: 0,
-            paddingLength: 4,
-            isEventCapture: 1,
-          }),
-          new TextContainerProperty({
-            containerID: 2,
-            containerName: "status",
-            xPosition: 0,
-            yPosition: 268,
-            width: 576,
-            height: 20,
-            content: readingView!.getStatusText(),
-            borderWidth: 0,
-            borderColor: 0,
-            borderRadius: 0,
-            paddingLength: 2,
-            isEventCapture: 0,
-          }),
-        ],
-        listObject: [],
-        imageObject: [],
-      }));
-      initialized = true;
-    } else {
-      await showReadingView();
-    }
-    currentMode = "reading";
-    console.log("Glasses: reading screen shown");
-  } catch (err) {
-    console.error("Glasses: failed to show reading screen:", err);
-  }
-}
+async function createInitialReadingPage() {
+  if (!bridge || !readingView) return;
+  // Truncate to 950 chars max for createStartUpPageContainer (limit is 1000)
+  const text = readingView.getCurrentPageText().substring(0, 950);
+  const status = readingView.getStatusText().substring(0, 100);
 
-async function showReadingView() {
-  if (!bridge || !initialized) return;
   try {
-    await bridge.rebuildPageContainer(new RebuildPageContainer({
+    const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
       containerTotalNum: 2,
       textObject: [
         new TextContainerProperty({
@@ -170,7 +124,7 @@ async function showReadingView() {
           yPosition: 0,
           width: 576,
           height: 264,
-          content: readingView!.getCurrentPageText(),
+          content: text,
           borderWidth: 0,
           borderColor: 0,
           borderRadius: 0,
@@ -184,7 +138,59 @@ async function showReadingView() {
           yPosition: 268,
           width: 576,
           height: 20,
-          content: readingView!.getStatusText(),
+          content: status,
+          borderWidth: 0,
+          borderColor: 0,
+          borderRadius: 0,
+          paddingLength: 2,
+          isEventCapture: 0,
+        }),
+      ],
+      listObject: [],
+      imageObject: [],
+    }));
+    console.log("Glasses: reading page created, result:", result);
+    initialized = true;
+    currentMode = "reading";
+  } catch (err) {
+    console.error("Glasses: createStartUpPageContainer (reading) failed:", err);
+  }
+}
+
+/**
+ * Switch from welcome to reading view using rebuildPageContainer.
+ */
+async function switchToReading() {
+  if (!bridge || !initialized || !readingView) return;
+  const text = readingView.getCurrentPageText().substring(0, 950);
+  const status = readingView.getStatusText().substring(0, 100);
+
+  try {
+    await bridge.rebuildPageContainer(new RebuildPageContainer({
+      containerTotalNum: 2,
+      textObject: [
+        new TextContainerProperty({
+          containerID: 1,
+          containerName: "reading",
+          xPosition: 0,
+          yPosition: 0,
+          width: 576,
+          height: 264,
+          content: text,
+          borderWidth: 0,
+          borderColor: 0,
+          borderRadius: 0,
+          paddingLength: 4,
+          isEventCapture: 1,
+        }),
+        new TextContainerProperty({
+          containerID: 2,
+          containerName: "status",
+          xPosition: 0,
+          yPosition: 268,
+          width: 576,
+          height: 20,
+          content: status,
           borderWidth: 0,
           borderColor: 0,
           borderRadius: 0,
@@ -196,19 +202,47 @@ async function showReadingView() {
       imageObject: [],
     }));
     currentMode = "reading";
-    console.log("Glasses: reading view rebuilt");
+    console.log("Glasses: switched to reading view");
   } catch (err) {
-    console.error("Glasses: failed to rebuild reading view:", err);
+    console.error("Glasses: rebuildPageContainer failed:", err);
   }
 }
 
-export async function switchToChapterList(chapters: { title: string }[]) {
+/**
+ * Update reading text in-place using textContainerUpgrade (faster, no flicker).
+ */
+async function updateReadingText() {
+  if (!bridge || !initialized || !readingView || currentMode !== "reading") return;
+  const text = readingView.getCurrentPageText().substring(0, 1900);
+  const status = readingView.getStatusText().substring(0, 200);
+
+  try {
+    await bridge.textContainerUpgrade(new TextContainerUpgrade({
+      containerID: 1,
+      containerName: "reading",
+      content: text,
+      contentOffset: 0,
+      contentLength: text.length,
+    }));
+    await bridge.textContainerUpgrade(new TextContainerUpgrade({
+      containerID: 2,
+      containerName: "status",
+      content: status,
+      contentOffset: 0,
+      contentLength: status.length,
+    }));
+  } catch (err) {
+    console.error("Glasses: textContainerUpgrade failed:", err);
+  }
+}
+
+export async function switchToChapterListView(chapters: { title: string }[]) {
   if (!bridge || !initialized) return;
   currentMode = "chapter-list";
   await chapterListView!.show(chapters);
 }
 
-export async function switchToReading() {
+export async function switchBackToReading() {
   if (!bridge || !initialized) return;
   currentMode = "reading";
   await readingView!.rebuildOnGlasses();
