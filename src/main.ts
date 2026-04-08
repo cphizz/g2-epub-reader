@@ -6,7 +6,7 @@ import { readerView } from "./ui/reader";
 import { settingsView } from "./ui/settings";
 import { welcomeView } from "./ui/welcome";
 import { getSettings, hasCompletedSetup } from "./store/reading-state";
-import { initGlassesDisplay } from "./glasses/display";
+import { setupGlassesEventListeners, initGlassesDisplay } from "./glasses/display";
 import { setBridge } from "./store/bridge-sync";
 import { restoreLibraryFromBridge } from "./store/library";
 
@@ -17,6 +17,10 @@ async function init() {
   // Apply saved theme
   const settings = getSettings();
   document.documentElement.setAttribute("data-theme", settings.theme);
+
+  // Start listening for book events IMMEDIATELY (before bridge connects)
+  // This queues any book-opened events for when the bridge is ready
+  setupGlassesEventListeners(bus);
 
   // Set up router
   const appEl = document.getElementById("app")!;
@@ -52,7 +56,7 @@ async function connectBridge(bus: EventTarget) {
       router.navigate("landing");
     }
 
-    // Init glasses display
+    // Init glasses display — will load any queued book automatically
     initGlassesDisplay(bridge as any, bus);
   } catch (err) {
     console.log("Running without G2 glasses:", err);
