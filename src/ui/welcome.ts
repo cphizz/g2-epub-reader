@@ -14,7 +14,7 @@ function render(el: HTMLElement, ctx: AppContext) {
   el.innerHTML = `
     <div class="welcome">
       <div class="welcome-icon">&#128214;</div>
-      <div class="welcome-title">G2 EPUB Reader</div>
+      <div class="welcome-title">BookLens</div>
       <div class="welcome-subtitle">Choose your reading style</div>
 
       <div class="welcome-themes">

@@ -88,7 +88,7 @@ async function showWelcomeScreen() {
           yPosition: 0,
           width: 576,
           height: 288,
-          content: "G2 EPUB Reader\n\nOpen a book on your phone to start reading.",
+          content: "BookLens\n\nOpen a book on your phone to start reading.",
           borderWidth: 0,
           borderColor: 0,
           borderRadius: 0,
